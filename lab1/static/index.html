@@ -1,0 +1,100 @@
+
+<html>
+<head>
+<title>My Lovely One-Page App</title>
+<script>
+function addNewEvent() {
+  nameStr = document.getElementById('nameInput').value;
+  dateStr = document.getElementById('dateInput').value;
+  alert("Hello " + nameStr + "! You will now sleep");
+
+  let xhr = new XMLHttpRequest(); 
+  xhr.open("POST", "/event", true); 
+  xhr.setRequestHeader("Content-Type", "application/json"); 
+
+  // Converting JSON data to string 
+  var data = JSON.stringify({ "name": nameStr, "date": dateStr }); 
+
+  // Sending data with the request 
+  xhr.send(data);  
+}
+
+function deleteThisEvent(id) {
+  alert("Hello " + "! you will delete it now");
+
+  let xhr = new XMLHttpRequest(); 
+  xhr.open("POST", "/delete", true); 
+  xhr.setRequestHeader("Content-Type", "application/json"); 
+
+  // Converting JSON data to string 
+  var data = JSON.stringify({ "id": id}); 
+
+  // Sending data with the request 
+  xhr.send(data);  
+}
+
+function parseDate(datestr) {
+  const [y, m, d] = datestr.split('-');
+  return new Date(Number.parseInt(y), Number.parseInt(m)-1, Number.parseInt(d));
+}
+
+function reqJSON(method, url, data) {
+  return new Promise((resolve, reject) => {
+    let xhr = new XMLHttpRequest();
+    xhr.open(method, url);
+    xhr.responseType = 'json';
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        resolve({status: xhr.status, data: xhr.response});
+      } else {
+        reject({status: xhr.status, data: xhr.response});
+      }
+    };
+    xhr.onerror = () => {
+      reject({status: xhr.status, data: xhr.response});
+    };
+    xhr.send(data);
+  });
+}
+
+var data = 
+document.addEventListener('DOMContentLoaded', () => {
+  reqJSON('GET', '/events')
+  .then(({status, data}) => {
+    // Use the *data* argument to change what we see on the page.
+    // It will look something like this:
+    // {
+    //   "events": [
+    //     {"name": "Grandma's Birthday", "date": "08-05"},
+    //     {"name": "Independence Day", "date": "07-04"}
+    //   ]
+    // }
+
+    // There are better ways, but this is illustrative of the concept:
+    let html = '';
+    html = 'id:name:date<br>'
+    for (let event of data.events) {
+      html += `${event.id}: ${event.name}: ${event.date}
+      <button onclick="deleteThisEvent(${event.id})">delete</button><br>`;
+    }
+    document.getElementById('events').innerHTML = html;
+  })
+  .catch(({status, data}) => {
+    // Display an error.
+    document.getElementById('events').innerHTML = 'ERROR: ' +
+      JSON.stringify(data);
+  });
+});
+</script>
+<body>
+<form onsubmit="return false">
+  Event name: <input type="text" id="nameInput">
+  date: <input type="text" id="dateInput">
+  <button onclick="addNewEvent()">create</button>
+</form>
+</body>
+</head>
+<body>
+<div id="events"></div>
+</body>
+</html>
