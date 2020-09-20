@@ -34,7 +34,7 @@
       }
 
       async function deleteThisEvent(id) {
-        alert("Hello " + "! you will delete it now");
+        //alert("Hello " + "! you will delete it now");
 
         let xhr = new XMLHttpRequest();
         xhr.open("POST", "/delete", true);
@@ -99,6 +99,15 @@
         return units.map((u) => (u < 10 ? "0" : "") + u).join(":");
       }
 
+      function autoDelete() {
+        reqJSON("GET", "/events").then(({ status, data }) => {
+          for (let event of data.events) {
+            let countDownTimer = renderCountDownTimer(event.date);
+            if (countDownTimer === null) deleteThisEvent(event.id);
+          }
+        });
+      }
+
       function showEvents() {
         reqJSON("GET", "/events")
           .then(({ status, data }) => {
@@ -113,12 +122,16 @@
 
             // There are better ways, but this is illustrative of the concept:
             let html = "";
-            html = "name:date:ETA<br>";
+            html =
+              '<table id="tbl" border=1 width="80%" frame=void rules=none>';
+            html +=
+              "<tr> <td>event name</td> <td>date</td> <td>ETA(days:hours:minutes:seconds)</td><td>delete button</td></tr>";
             for (let event of data.events) {
               let countDownTimer = renderCountDownTimer(event.date);
-              html += `${event.name}: ${event.date}: ${countDownTimer}
-        <button onclick="deleteThisEvent(${event.id})">delete</button><br>`;
+              html += `<tr> <td>${event.name}</td> <td>${event.date}</td> <td>${countDownTimer}</td> <td>
+        <button onclick="deleteThisEvent(${event.id})">delete</button></td></tr>`;
             }
+            html += "<table>";
             document.getElementById("events").innerHTML = html;
           })
           .catch(({ status, data }) => {
@@ -128,9 +141,12 @@
           });
       }
       document.addEventListener("DOMContentLoaded", () => {
-        var data = setInterval(function () {
+        setInterval(function () {
           showEvents();
         }, 1000);
+        setInterval(function () {
+          autoDelete();
+        }, 5000);
       });
     </script>
   </head>

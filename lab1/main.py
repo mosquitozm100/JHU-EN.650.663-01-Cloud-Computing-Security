@@ -64,7 +64,7 @@ def event():
     nameStr = data.get("name")
     dateStr = data.get("date")
     put_event(nameStr, dateStr)
-    return 'OK'
+    return 'Create successfully'
 
 @app.route('/delete', methods= ['POST'])
 def delete():
@@ -74,7 +74,7 @@ def delete():
     print(deleteKey)
     print(DS.get(deleteKey))
     DS.delete(deleteKey)
-    return 'OK'
+    return 'Delete successfully'
 
 if __name__ == '__main__':
     # This is used when running locally only. When deploying to Google App
