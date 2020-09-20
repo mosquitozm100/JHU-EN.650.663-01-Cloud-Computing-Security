@@ -100,7 +100,6 @@
       }
 
       function showEvents() {
-        console.log("tst");
         reqJSON("GET", "/events")
           .then(({ status, data }) => {
             // Use the *data* argument to change what we see on the page.
@@ -131,9 +130,6 @@
       document.addEventListener("DOMContentLoaded", () => {
         var data = setInterval(function () {
           showEvents();
-        }, 1000);
-        setInterval(function () {
-          console.log("2");
         }, 1000);
       });
     </script>
