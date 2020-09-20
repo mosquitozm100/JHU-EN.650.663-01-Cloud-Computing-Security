@@ -1,7 +1,8 @@
 runtime: python38
 
-#handlers:
-#- url: /
-#  static_files: index.html
-#  upload: index.html
+handlers:
+- url: /static
+  static_files: static
+  url: /.*
+  script: auto
 

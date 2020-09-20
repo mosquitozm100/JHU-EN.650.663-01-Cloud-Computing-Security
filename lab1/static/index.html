@@ -1,100 +1,151 @@
-
 <html>
-<head>
-<title>My Lovely One-Page App</title>
-<script>
-function addNewEvent() {
-  nameStr = document.getElementById('nameInput').value;
-  dateStr = document.getElementById('dateInput').value;
-  alert("Hello " + nameStr + "! You will now sleep");
-
-  let xhr = new XMLHttpRequest(); 
-  xhr.open("POST", "/event", true); 
-  xhr.setRequestHeader("Content-Type", "application/json"); 
-
-  // Converting JSON data to string 
-  var data = JSON.stringify({ "name": nameStr, "date": dateStr }); 
-
-  // Sending data with the request 
-  xhr.send(data);  
-}
-
-function deleteThisEvent(id) {
-  alert("Hello " + "! you will delete it now");
-
-  let xhr = new XMLHttpRequest(); 
-  xhr.open("POST", "/delete", true); 
-  xhr.setRequestHeader("Content-Type", "application/json"); 
-
-  // Converting JSON data to string 
-  var data = JSON.stringify({ "id": id}); 
-
-  // Sending data with the request 
-  xhr.send(data);  
-}
-
-function parseDate(datestr) {
-  const [y, m, d] = datestr.split('-');
-  return new Date(Number.parseInt(y), Number.parseInt(m)-1, Number.parseInt(d));
-}
-
-function reqJSON(method, url, data) {
-  return new Promise((resolve, reject) => {
-    let xhr = new XMLHttpRequest();
-    xhr.open(method, url);
-    xhr.responseType = 'json';
-    xhr.onload = () => {
-      if (xhr.status >= 200 && xhr.status < 300) {
-        resolve({status: xhr.status, data: xhr.response});
-      } else {
-        reject({status: xhr.status, data: xhr.response});
+  <head>
+    <title>My Lovely One-Page App</title>
+    <script>
+      function inputDateStyleCheck(strInputDate) {
+        if (strInputDate == "") return false;
+        strInputDate = strInputDate.replace(/-/g, "/");
+        var d = new Date(strInputDate);
+        if (isNaN(d)) return false;
+        var arr = strInputDate.split("/");
+        return (
+          parseInt(arr[0], 10) == d.getFullYear() &&
+          parseInt(arr[1], 10) == d.getMonth() + 1 &&
+          parseInt(arr[2], 10) == d.getDate()
+        );
       }
-    };
-    xhr.onerror = () => {
-      reject({status: xhr.status, data: xhr.response});
-    };
-    xhr.send(data);
-  });
-}
 
-var data = 
-document.addEventListener('DOMContentLoaded', () => {
-  reqJSON('GET', '/events')
-  .then(({status, data}) => {
-    // Use the *data* argument to change what we see on the page.
-    // It will look something like this:
-    // {
-    //   "events": [
-    //     {"name": "Grandma's Birthday", "date": "08-05"},
-    //     {"name": "Independence Day", "date": "07-04"}
-    //   ]
-    // }
+      async function addNewEvent() {
+        nameStr = document.getElementById("nameInput").value;
+        dateStr = document.getElementById("dateInput").value;
+        if (!inputDateStyleCheck(dateStr)) {
+          alert("Invalid Date! Please re-enter you date！");
+        } else {
+          let xhr = new XMLHttpRequest();
+          xhr.open("POST", "/event", true);
+          xhr.setRequestHeader("Content-Type", "application/json");
 
-    // There are better ways, but this is illustrative of the concept:
-    let html = '';
-    html = 'id:name:date<br>'
-    for (let event of data.events) {
-      html += `${event.id}: ${event.name}: ${event.date}
-      <button onclick="deleteThisEvent(${event.id})">delete</button><br>`;
-    }
-    document.getElementById('events').innerHTML = html;
-  })
-  .catch(({status, data}) => {
-    // Display an error.
-    document.getElementById('events').innerHTML = 'ERROR: ' +
-      JSON.stringify(data);
-  });
-});
-</script>
-<body>
-<form onsubmit="return false">
-  Event name: <input type="text" id="nameInput">
-  date: <input type="text" id="dateInput">
-  <button onclick="addNewEvent()">create</button>
-</form>
-</body>
-</head>
-<body>
-<div id="events"></div>
-</body>
+          // Converting JSON data to string
+          var data = JSON.stringify({ name: nameStr, date: dateStr });
+
+          // Sending data with the request
+          xhr.send(data);
+        }
+      }
+
+      async function deleteThisEvent(id) {
+        alert("Hello " + "! you will delete it now");
+
+        let xhr = new XMLHttpRequest();
+        xhr.open("POST", "/delete", true);
+        xhr.setRequestHeader("Content-Type", "application/json");
+
+        // Converting JSON data to string
+        var data = JSON.stringify({ id: id });
+
+        // Sending data with the request
+        xhr.send(data);
+      }
+
+      function parseDate(datestr) {
+        datestr = datestr.replace(/-/g, "/");
+        const [y, m, d] = datestr.split("/");
+        return new Date(
+          Number.parseInt(y),
+          Number.parseInt(m) - 1,
+          Number.parseInt(d)
+        );
+      }
+
+      function reqJSON(method, url, data) {
+        return new Promise((resolve, reject) => {
+          let xhr = new XMLHttpRequest();
+          xhr.open(method, url);
+          xhr.responseType = "json";
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve({ status: xhr.status, data: xhr.response });
+            } else {
+              reject({ status: xhr.status, data: xhr.response });
+            }
+          };
+          xhr.onerror = () => {
+            reject({ status: xhr.status, data: xhr.response });
+          };
+          xhr.send(data);
+        });
+      }
+
+      function renderCountDownTimer(dateStr) {
+        if (!inputDateStyleCheck(dateStr)) return null;
+        let date = parseDate(dateStr);
+        console.log(date);
+        let seconds = Math.floor((+date - new Date()) / 1000);
+        if (seconds < 0) return null;
+
+        let minutes = Math.floor(seconds / 60);
+        seconds %= 60;
+
+        let hours = Math.floor(minutes / 60);
+        minutes %= 60;
+
+        let days = Math.floor(hours / 60);
+        hours %= 60;
+
+        let units = [days, hours, minutes, seconds];
+        while (units.length > 0 && units[0] === 0) {
+          units.shift();
+        }
+        return units.map((u) => (u < 10 ? "0" : "") + u).join(":");
+      }
+
+      function showEvents() {
+        console.log("tst");
+        reqJSON("GET", "/events")
+          .then(({ status, data }) => {
+            // Use the *data* argument to change what we see on the page.
+            // It will look something like this:
+            // {
+            //   "events": [
+            //     {"name": "Grandma's Birthday", "date": "08-05"},
+            //     {"name": "Independence Day", "date": "07-04"}
+            //   ]
+            // }
+
+            // There are better ways, but this is illustrative of the concept:
+            let html = "";
+            html = "name:date:ETA<br>";
+            for (let event of data.events) {
+              let countDownTimer = renderCountDownTimer(event.date);
+              html += `${event.name}: ${event.date}: ${countDownTimer}
+        <button onclick="deleteThisEvent(${event.id})">delete</button><br>`;
+            }
+            document.getElementById("events").innerHTML = html;
+          })
+          .catch(({ status, data }) => {
+            // Display an error.
+            document.getElementById("events").innerHTML =
+              "ERROR: " + JSON.stringify(data);
+          });
+      }
+      document.addEventListener("DOMContentLoaded", () => {
+        var data = setInterval(function () {
+          showEvents();
+        }, 1000);
+        setInterval(function () {
+          console.log("2");
+        }, 1000);
+      });
+    </script>
+  </head>
+  <body>
+    <form onsubmit="return false">
+      Event name: <input type="text" id="nameInput" /> date:
+      <input type="text" id="dateInput" />
+      <button onclick="addNewEvent()">create</button>
+    </form>
+  </body>
+  <body>
+    <div id="events"></div>
+  </body>
 </html>
