@@ -100,8 +100,13 @@ def delete(event_id):
         Success
     '''
     deleteKey = DS.key(EVENT, event_id, parent=ROOT)
-    DS.delete(deleteKey)
-    return 'Delete successfully'
+    try:
+        event = DS.get(deleteKey)
+        DS.delete(event.key)
+    except:
+        return 'Error! Event not found!'
+    else:
+        return 'Delete successfully.'
 
 
 if __name__ == '__main__':

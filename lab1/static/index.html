@@ -2,6 +2,7 @@
   <head>
     <title>My Lovely One-Page App</title>
     <script>
+      //Check whether the input date is in a right format YYYY-MM-DD and is a valid date
       function inputDateStyleCheck(strInputDate) {
         if (strInputDate == "") return false;
         strInputDate = strInputDate.replace(/-/g, "/");
@@ -15,6 +16,7 @@
         );
       }
 
+      //Check whether the input yearless date is in a right format MM-DD and is a valid date
       function inputYearlessDateStyleCheck(strInputDate) {
         if (strInputDate == "") return false;
         strInputDate = strInputDate.replace(/-/g, "/");
@@ -27,6 +29,7 @@
         );
       }
 
+      //Create a new event with given data and store it in to the cloud storage. Triggered by the Create Event button at the top of the page.
       async function addNewEvent() {
         nameStr = document.getElementById("nameInput").value;
         dateStr = document.getElementById("dateInput").value;
@@ -42,24 +45,28 @@
               //alert("Create success！");
             })
             .catch(({ status, data }) => {
-              alert("Create fails! Connection error");
+              alert("Create fails! Connection with server error");
             });
         }
       }
 
+      //Delete an event with given id. Triggered by the button after each event.
       async function deleteThisEvent(id) {
         reqJSON("DELETE", `/event/${id}`)
           .then(({ status, data }) => {
+            console.log(status);
+            console.log(data);
             //alert("Delete success！");
           })
           .catch(({ status, data }) => {
-            alert("Delete fails! Connection error");
+            alert("Delete fails! Connection with server error");
           });
       }
 
-      function parseDate(datestr) {
-        datestr = datestr.replace(/-/g, "/");
-        const [y, m, d] = datestr.split("/");
+      //parse string of date into Date in javascript
+      function parseDate(dateStr) {
+        dateStr = dateStr.replace(/-/g, "/");
+        const [y, m, d] = dateStr.split("/");
         return new Date(
           Number.parseInt(y),
           Number.parseInt(m) - 1,
@@ -67,6 +74,7 @@
         );
       }
 
+      //Make a request using RESTful API to the given path with any method and data.
       function reqJSON(method, url, data) {
         return new Promise((resolve, reject) => {
           let xhr = new XMLHttpRequest();
@@ -87,6 +95,7 @@
         });
       }
 
+      // Calculate Count Down for given date in string format.
       function renderCountDownTimer(dateStr) {
         if (inputYearlessDateStyleCheck(dateStr)) {
           let currentYear = new Date().getFullYear();
@@ -120,6 +129,7 @@
         );
       }
 
+      //Check whether a date is in the past
       function isPast(dateStr) {
         if (inputYearlessDateStyleCheck(dateStr)) return false;
         let date = parseDate(dateStr);
@@ -128,6 +138,7 @@
         else return false;
       }
 
+      //Auto delete all expired events. Scan all events every 5 seconds.
       function autoDelete() {
         reqJSON("GET", "/events").then(({ status, data }) => {
           for (let event of data.events) {
@@ -136,6 +147,7 @@
         });
       }
 
+      //Show all events currently in the cloud storage.
       function showEvents() {
         reqJSON("GET", "/events")
           .then(({ status, data }) => {
@@ -153,10 +165,11 @@
             html =
               '<table id="tbl" border=1 width="80%" frame=void rules=none>';
             html +=
-              "<tr> <td>event name</td> <td>date</td> <td>ETA</td><td>delete button</td></tr>";
+              "<tr> <td>event id</td><td>event name</td> <td>date</td> <td>ETA</td><td>delete button</td></tr>";
             for (let event of data.events) {
               let countDownTimer = renderCountDownTimer(event.date);
-              html += `<tr> <td>${event.name}</td> <td>${event.date}</td> <td>${countDownTimer}</td> <td>
+              if (countDownTimer === null) countDownTimer = 0;
+              html += `<tr> <td>${event.id}</td> <td>${event.name}</td> <td>${event.date}</td> <td>${countDownTimer}</td> <td>
         <button onclick="deleteThisEvent(${event.id})">delete</button></td></tr>`;
             }
             html += "<table>";
@@ -168,6 +181,8 @@
               "CONNECTION ERROR: " + JSON.stringify(data);
           });
       }
+
+      //Change countdown for every event every 1 second, autodelete expired event every 5 seconds.
       document.addEventListener("DOMContentLoaded", () => {
         setInterval(function () {
           showEvents();
