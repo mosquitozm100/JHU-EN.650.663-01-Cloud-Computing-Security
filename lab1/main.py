@@ -53,6 +53,7 @@ def request_parse(req_data):
 
 
 @app.route('/')
+@app.route('/index.html')
 def root():
     '''
     Direct these two request to the index.html page.
@@ -97,7 +98,8 @@ def delete(event_id):
     Args:
         event_id - the id of the event about to delete.
     Returns:
-        Success
+        Delete Success - 'Delete successfully.'
+        Delete Fails - Error! Event not found!'
     '''
     deleteKey = DS.key(EVENT, event_id, parent=ROOT)
     try:
