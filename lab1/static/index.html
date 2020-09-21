@@ -36,30 +36,25 @@
         ) {
           alert("Invalid Date! Please re-enter you date！");
         } else {
-          let xhr = new XMLHttpRequest();
-          xhr.open("POST", "/event", true);
-          xhr.setRequestHeader("Content-Type", "application/json");
-
-          // Converting JSON data to string
           var data = JSON.stringify({ name: nameStr, date: dateStr });
-
-          // Sending data with the request
-          xhr.send(data);
+          reqJSON("POST", "/event", data)
+            .then(({ status, data }) => {
+              //alert("Create success！");
+            })
+            .catch(({ status, data }) => {
+              alert("Create fails! Connection error");
+            });
         }
       }
 
       async function deleteThisEvent(id) {
-        alert("Hello " + "! you will delete it now");
-
-        let xhr = new XMLHttpRequest();
-        xhr.open("DELETE", `/event/${id}`, true);
-        xhr.setRequestHeader("Content-Type", "application/json");
-
-        // Converting JSON data to string
-        var data = JSON.stringify({ id: id });
-
-        // Sending data with the request
-        xhr.send(data);
+        reqJSON("DELETE", `/event/${id}`)
+          .then(({ status, data }) => {
+            //alert("Delete success！");
+          })
+          .catch(({ status, data }) => {
+            alert("Delete fails! Connection error");
+          });
       }
 
       function parseDate(datestr) {
@@ -76,6 +71,7 @@
         return new Promise((resolve, reject) => {
           let xhr = new XMLHttpRequest();
           xhr.open(method, url);
+          xhr.setRequestHeader("Content-Type", "application/json");
           xhr.responseType = "json";
           xhr.onload = () => {
             if (xhr.status >= 200 && xhr.status < 300) {
@@ -98,7 +94,6 @@
             dateStr = currentYear + "-" + dateStr;
           else dateStr = currentYear + 1 + "-" + dateStr;
         }
-        console.log(dateStr);
         if (!inputDateStyleCheck(dateStr)) return null;
         let date = parseDate(dateStr);
         let seconds = Math.floor((+date - new Date()) / 1000);
@@ -170,7 +165,7 @@
           .catch(({ status, data }) => {
             // Display an error.
             document.getElementById("events").innerHTML =
-              "ERROR: " + JSON.stringify(data);
+              "CONNECTION ERROR: " + JSON.stringify(data);
           });
       }
       document.addEventListener("DOMContentLoaded", () => {
