@@ -1,20 +1,6 @@
-# Copyright 2018 Google LLC
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-
-# [START gae_python38_app]
 from flask import Flask, json, jsonify, render_template, request
 from google.cloud import datastore
+import os
 from werkzeug.debug import DebuggedApplication
 
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
@@ -25,16 +11,40 @@ if app.debug:
     app.wsgi_app = DebuggedApplication(app.wsgi_app, evalex=True)
 
 
-DS = datastore.Client()
-EVENT = 'Event' # Name of the event table, can be anything you like.
-ROOT = DS.key('Entities', 'root') # Name of root key, can be anything.
+DS = datastore.Client()  # The client to connect with Google cloud storage
+EVENT = 'Event'  # Name of the event table, can be anything you like.
+ROOT = DS.key('Entities', 'root')  # Name of root key, can be anything.
 
-def put_event(name, date_str):
+# Distinguish between data for local server and cloud server
+if os.getenv('GAE_ENV', '').startswith('standard'):
+    ROOT = DS.key('Entities', 'root')
+else:
+    ROOT = DS.key('Entities', 'dev')
+
+
+def put_event(name, dateStr):
+    '''
+    Put a new event into google cloud storage datebase.
+    Args:
+        name - the name of new event
+        dataStr - the date of the new event in string form.
+
+    Returns:
+        null
+    '''
     entity = datastore.Entity(key=DS.key(EVENT, parent=ROOT))
-    entity.update({'name': name, 'date': date_str})
+    entity.update({'name': name, 'date': dateStr})
     DS.put(entity)
 
+
 def request_parse(req_data):
+    '''
+    A helper function to get name and date from json file in Get/Post method.
+    Args:
+        req_data - the json containing name and date
+    Returns:
+        the name and date contains in the json
+    '''
     if req_data.method == 'POST':
         data = req_data.json
     elif req_data.method == 'GET':
@@ -43,42 +53,60 @@ def request_parse(req_data):
 
 
 @app.route('/')
+@app.route('/index.html')
 def root():
-    #return render_template('index.html');
+    '''
+    Direct these two request to the index.html page.
+    '''
     return app.send_static_file('index.html')
 
-@app.route('/events', methods= ['GET'])
+
+@app.route('/events', methods=['GET'])
 def events():
+    '''
+    Get all events stored in the google cloud database.
+    Returns:
+        id, name and date for all events in json
+    '''
     events = []
     for val in DS.query(kind=EVENT, ancestor=ROOT).fetch():
-        #print(val)
-        val['id']=val.id
+        val['id'] = val.id
         events.append(val)
     jsonEvents = {}
     jsonEvents["events"] = events
-    return jsonify(jsonEvents);
-    
-@app.route('/event', methods= ['POST'])
+    return jsonify(jsonEvents)
+
+
+@app.route('/event', methods=['POST'])
 def event():
+    '''
+    Add a new event into google cloud storage datebase.
+    Returns:
+        Success.
+    '''
     data = request_parse(request)
     nameStr = data.get("name")
     dateStr = data.get("date")
     put_event(nameStr, dateStr)
     return 'Create successfully'
 
-@app.route('/delete', methods= ['POST'])
-def delete():
-    data = request_parse(request)
-    id = data.get("id")
-    deleteKey = DS.key('Entities', 'root', 'Event', id)
-    print(deleteKey)
-    print(DS.get(deleteKey))
+
+@app.route('/event/<int:event_id>', methods=['DELETE'])
+def delete(event_id):
+    '''
+    Delete the event with input event_id from google cloud storage
+    Args:
+        event_id - the id of the event about to delete.
+    Returns:
+        Success
+    '''
+    deleteKey = DS.key(EVENT, event_id, parent=ROOT)
     DS.delete(deleteKey)
     return 'Delete successfully'
 
+
 if __name__ == '__main__':
-    # This is used when running locally only. When deploying to Google App
-    # Engine, a webserver process such as Gunicorn will serve the app. This
-    # can be configured by adding an `entrypoint` to app.yaml.
+    '''
+    Run the server for local test.
+    '''
     app.run(host='127.0.0.1', port=8080, debug=True)
-# [END gae_python38_app]

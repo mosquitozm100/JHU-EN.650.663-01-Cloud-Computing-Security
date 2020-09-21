@@ -37,7 +37,7 @@
         //alert("Hello " + "! you will delete it now");
 
         let xhr = new XMLHttpRequest();
-        xhr.open("POST", "/delete", true);
+        xhr.open("DELETE", `/event/${id}`, true);
         xhr.setRequestHeader("Content-Type", "application/json");
 
         // Converting JSON data to string
@@ -79,7 +79,6 @@
       function renderCountDownTimer(dateStr) {
         if (!inputDateStyleCheck(dateStr)) return null;
         let date = parseDate(dateStr);
-        console.log(date);
         let seconds = Math.floor((+date - new Date()) / 1000);
         if (seconds < 0) return null;
 
@@ -92,18 +91,27 @@
         let days = Math.floor(hours / 60);
         hours %= 60;
 
-        let units = [days, hours, minutes, seconds];
-        while (units.length > 0 && units[0] === 0) {
-          units.shift();
-        }
-        return units.map((u) => (u < 10 ? "0" : "") + u).join(":");
+        return (
+          days +
+          "days  " +
+          hours +
+          "hours  " +
+          minutes +
+          "minutes  " +
+          seconds +
+          "seconds  "
+        );
+      }
+
+      function isPast(date) {
+        if (renderCountDownTimer(date) === null) return true;
+        else return false;
       }
 
       function autoDelete() {
         reqJSON("GET", "/events").then(({ status, data }) => {
           for (let event of data.events) {
-            let countDownTimer = renderCountDownTimer(event.date);
-            if (countDownTimer === null) deleteThisEvent(event.id);
+            if (isPast(event.date)) deleteThisEvent(event.id);
           }
         });
       }
