@@ -53,7 +53,6 @@ def request_parse(req_data):
 
 
 @app.route('/')
-@app.route('/index.html')
 def root():
     '''
     Direct these two request to the index.html page.

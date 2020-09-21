@@ -15,10 +15,25 @@
         );
       }
 
+      function inputYearlessDateStyleCheck(strInputDate) {
+        if (strInputDate == "") return false;
+        strInputDate = strInputDate.replace(/-/g, "/");
+        var d = new Date(strInputDate);
+        if (isNaN(d)) return false;
+        var arr = strInputDate.split("/");
+        return (
+          parseInt(arr[0], 10) == d.getMonth() + 1 &&
+          parseInt(arr[1], 10) == d.getDate()
+        );
+      }
+
       async function addNewEvent() {
         nameStr = document.getElementById("nameInput").value;
         dateStr = document.getElementById("dateInput").value;
-        if (!inputDateStyleCheck(dateStr)) {
+        if (
+          !inputDateStyleCheck(dateStr) &&
+          !inputYearlessDateStyleCheck(dateStr)
+        ) {
           alert("Invalid Date! Please re-enter you date！");
         } else {
           let xhr = new XMLHttpRequest();
@@ -34,7 +49,7 @@
       }
 
       async function deleteThisEvent(id) {
-        //alert("Hello " + "! you will delete it now");
+        alert("Hello " + "! you will delete it now");
 
         let xhr = new XMLHttpRequest();
         xhr.open("DELETE", `/event/${id}`, true);
@@ -77,6 +92,13 @@
       }
 
       function renderCountDownTimer(dateStr) {
+        if (inputYearlessDateStyleCheck(dateStr)) {
+          let currentYear = new Date().getFullYear();
+          if (!isPast(currentYear + "-" + dateStr))
+            dateStr = currentYear + "-" + dateStr;
+          else dateStr = currentYear + 1 + "-" + dateStr;
+        }
+        console.log(dateStr);
         if (!inputDateStyleCheck(dateStr)) return null;
         let date = parseDate(dateStr);
         let seconds = Math.floor((+date - new Date()) / 1000);
@@ -88,23 +110,26 @@
         let hours = Math.floor(minutes / 60);
         minutes %= 60;
 
-        let days = Math.floor(hours / 60);
-        hours %= 60;
+        let days = Math.floor(hours / 24);
+        hours %= 24;
 
         return (
           days +
-          "days  " +
+          "days, " +
           hours +
-          "hours  " +
+          "hours, " +
           minutes +
-          "minutes  " +
+          "minutes, " +
           seconds +
-          "seconds  "
+          "seconds"
         );
       }
 
-      function isPast(date) {
-        if (renderCountDownTimer(date) === null) return true;
+      function isPast(dateStr) {
+        if (inputYearlessDateStyleCheck(dateStr)) return false;
+        let date = parseDate(dateStr);
+        let seconds = Math.floor((+date - new Date()) / 1000);
+        if (seconds < 0) return true;
         else return false;
       }
 
@@ -133,7 +158,7 @@
             html =
               '<table id="tbl" border=1 width="80%" frame=void rules=none>';
             html +=
-              "<tr> <td>event name</td> <td>date</td> <td>ETA(days:hours:minutes:seconds)</td><td>delete button</td></tr>";
+              "<tr> <td>event name</td> <td>date</td> <td>ETA</td><td>delete button</td></tr>";
             for (let event of data.events) {
               let countDownTimer = renderCountDownTimer(event.date);
               html += `<tr> <td>${event.name}</td> <td>${event.date}</td> <td>${countDownTimer}</td> <td>
