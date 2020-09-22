@@ -1,0 +1,206 @@
+<html>
+  <head>
+    <title>My Lovely One-Page App</title>
+    <script>
+      //Check whether the input date is in a right format YYYY-MM-DD and is a valid date
+      function inputDateStyleCheck(strInputDate) {
+        if (strInputDate == "") return false;
+        strInputDate = strInputDate.replace(/-/g, "/");
+        var d = new Date(strInputDate);
+        if (isNaN(d)) return false;
+        var arr = strInputDate.split("/");
+        return (
+          parseInt(arr[0], 10) == d.getFullYear() &&
+          parseInt(arr[1], 10) == d.getMonth() + 1 &&
+          parseInt(arr[2], 10) == d.getDate()
+        );
+      }
+
+      //Check whether the input yearless date is in a right format MM-DD and is a valid date
+      function inputYearlessDateStyleCheck(strInputDate) {
+        if (strInputDate == "") return false;
+        strInputDate = strInputDate.replace(/-/g, "/");
+        var d = new Date(strInputDate);
+        if (isNaN(d)) return false;
+        var arr = strInputDate.split("/");
+        return (
+          parseInt(arr[0], 10) == d.getMonth() + 1 &&
+          parseInt(arr[1], 10) == d.getDate()
+        );
+      }
+
+      //Create a new event with given data and store it in to the cloud storage. Triggered by the Create Event button at the top of the page.
+      async function addNewEvent() {
+        nameStr = document.getElementById("nameInput").value;
+        dateStr = document.getElementById("dateInput").value;
+        if (
+          !inputDateStyleCheck(dateStr) &&
+          !inputYearlessDateStyleCheck(dateStr)
+        ) {
+          alert("Invalid Date! Please re-enter you date！");
+        } else {
+          var data = JSON.stringify({ name: nameStr, date: dateStr });
+          reqJSON("POST", "/event", data)
+            .then(({ status, data }) => {
+              //alert("Create success！");
+            })
+            .catch(({ status, data }) => {
+              alert("Create fails! Connection with server error");
+            });
+        }
+      }
+
+      //Delete an event with given id. Triggered by the button after each event.
+      async function deleteThisEvent(id) {
+        reqJSON("DELETE", `/event/${id}`)
+          .then(({ status, data }) => {
+            console.log(status);
+            console.log(data);
+            //alert("Delete success！");
+          })
+          .catch(({ status, data }) => {
+            alert("Delete fails! Connection with server error");
+          });
+      }
+
+      //parse string of date into Date in javascript
+      function parseDate(dateStr) {
+        dateStr = dateStr.replace(/-/g, "/");
+        const [y, m, d] = dateStr.split("/");
+        return new Date(
+          Number.parseInt(y),
+          Number.parseInt(m) - 1,
+          Number.parseInt(d)
+        );
+      }
+
+      //Make a request using RESTful API to the given path with any method and data.
+      function reqJSON(method, url, data) {
+        return new Promise((resolve, reject) => {
+          let xhr = new XMLHttpRequest();
+          xhr.open(method, url);
+          xhr.setRequestHeader("Content-Type", "application/json");
+          xhr.responseType = "json";
+          xhr.onload = () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve({ status: xhr.status, data: xhr.response });
+            } else {
+              reject({ status: xhr.status, data: xhr.response });
+            }
+          };
+          xhr.onerror = () => {
+            reject({ status: xhr.status, data: xhr.response });
+          };
+          xhr.send(data);
+        });
+      }
+
+      // Calculate Count Down for given date in string format.
+      function renderCountDownTimer(dateStr) {
+        if (inputYearlessDateStyleCheck(dateStr)) {
+          let currentYear = new Date().getFullYear();
+          if (!isPast(currentYear + "-" + dateStr))
+            dateStr = currentYear + "-" + dateStr;
+          else dateStr = currentYear + 1 + "-" + dateStr;
+        }
+        if (!inputDateStyleCheck(dateStr)) return null;
+        let date = parseDate(dateStr);
+        let seconds = Math.floor((+date - new Date()) / 1000);
+        if (seconds < 0) return null;
+
+        let minutes = Math.floor(seconds / 60);
+        seconds %= 60;
+
+        let hours = Math.floor(minutes / 60);
+        minutes %= 60;
+
+        let days = Math.floor(hours / 24);
+        hours %= 24;
+
+        return (
+          days +
+          "days, " +
+          hours +
+          "hours, " +
+          minutes +
+          "minutes, " +
+          seconds +
+          "seconds"
+        );
+      }
+
+      //Check whether a date is in the past
+      function isPast(dateStr) {
+        if (inputYearlessDateStyleCheck(dateStr)) return false;
+        let date = parseDate(dateStr);
+        let seconds = Math.floor((+date - new Date()) / 1000);
+        if (seconds < 0) return true;
+        else return false;
+      }
+
+      //Auto delete all expired events. Scan all events every 5 seconds.
+      function autoDelete() {
+        reqJSON("GET", "/events").then(({ status, data }) => {
+          for (let event of data.events) {
+            if (isPast(event.date)) deleteThisEvent(event.id);
+          }
+        });
+      }
+
+      //Show all events currently in the cloud storage.
+      function showEvents() {
+        reqJSON("GET", "/events")
+          .then(({ status, data }) => {
+            // Use the *data* argument to change what we see on the page.
+            // It will look something like this:
+            // {
+            //   "events": [
+            //     {"name": "Grandma's Birthday", "date": "08-05"},
+            //     {"name": "Independence Day", "date": "07-04"}
+            //   ]
+            // }
+
+            // There are better ways, but this is illustrative of the concept:
+            let html = "";
+            html =
+              '<table id="tbl" border=1 width="80%" frame=void rules=none>';
+            html +=
+              "<tr> <td>event id</td><td>event name</td> <td>date</td> <td>ETA</td><td>delete button</td></tr>";
+            for (let event of data.events) {
+              let countDownTimer = renderCountDownTimer(event.date);
+              if (countDownTimer === null) countDownTimer = 0;
+              html += `<tr> <td>${event.id}</td> <td>${event.name}</td> <td>${event.date}</td> <td>${countDownTimer}</td> <td>
+        <button onclick="deleteThisEvent(${event.id})">delete</button></td></tr>`;
+            }
+            html += "<table>";
+            document.getElementById("events").innerHTML = html;
+          })
+          .catch(({ status, data }) => {
+            // Display an error.
+            document.getElementById("events").innerHTML =
+              "CONNECTION ERROR: " + JSON.stringify(data);
+          });
+      }
+
+      //Change countdown for every event every 1 second, autodelete expired event every 5 seconds.
+      document.addEventListener("DOMContentLoaded", () => {
+        setInterval(function () {
+          showEvents();
+        }, 1000);
+        setInterval(function () {
+          autoDelete();
+        }, 5000);
+      });
+    </script>
+  </head>
+  <body>
+    <form onsubmit="return false">
+      Event name: <input type="text" id="nameInput" /> date:
+      <input type="text" id="dateInput" />
+      <button onclick="addNewEvent()">create</button>
+    </form>
+  </body>
+  <body>
+    <div id="events"></div>
+  </body>
+</html>
