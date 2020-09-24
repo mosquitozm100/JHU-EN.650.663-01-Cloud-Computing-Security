@@ -1,5 +1,6 @@
 runtime: python38
 default_expiration: "1m"
+secure: always
 
 handlers:
   - url: /static

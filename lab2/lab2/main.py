@@ -1,4 +1,4 @@
-from flask import Flask, json, jsonify, render_template, request
+from flask import Flask, json, jsonify, render_template, request, url_for, redirect, session, escape
 from google.cloud import datastore
 import os
 from werkzeug.debug import DebuggedApplication
@@ -6,6 +6,9 @@ from werkzeug.debug import DebuggedApplication
 # If `entrypoint` is not defined in app.yaml, App Engine will look for an app
 # called `app` in `main.py`.
 app = Flask(__name__)
+
+# Set the secret key to some random bytes. Keep this really secret!
+app.secret_key = b'_5#y2L"F4Q8z\n\xec]/'
 
 if app.debug:
     app.wsgi_app = DebuggedApplication(app.wsgi_app, evalex=True)
@@ -58,7 +61,12 @@ def root():
     '''
     Direct these two request to the index.html page.
     '''
-    return app.send_static_file('index.html')
+    print(session)
+    if 'username' in session:
+        return app.send_static_file('index.html')
+    else:
+        login_url = url_for('login')
+        return redirect(login_url)
 
 
 @app.route('/events', methods=['GET'])
@@ -109,6 +117,31 @@ def delete(event_id):
         return 'Error! Event not found!'
     else:
         return 'Delete successfully.'
+
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    print(session)
+    if 'username' in session:
+        return app.send_static_file('index.html')
+    if request.method == 'GET':
+        return app.send_static_file('login.html')
+    elif request.method == 'POST':
+        session['username'] = request.form['username']
+        return redirect(url_for('root'))
+
+
+@app.route('/signup')
+def signup():
+    return app.send_static_file('signup.html')
+
+
+@app.route('/logout')
+def logout():
+    # remove the username from the session if it is there
+    print(session)
+    session.pop('username', None)
+    return redirect(url_for('root'))
 
 
 if __name__ == '__main__':
