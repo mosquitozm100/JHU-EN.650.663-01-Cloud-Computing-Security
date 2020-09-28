@@ -4,48 +4,13 @@
   </head>
   <body>
     <h1>Please Login</h1>
-    <form name="login">
+    <form name="login" action = "/login" method = "POST"></form>
       Username<input type="text" name="username" /> Password<input
         type="password"
         name="password"
       />
-      <input
-        type="button"
-        onclick="sendForm(this.form).then().catch();"
-        value="Login"
-      />
+      <input type="submit" value="Login" />
       <input type="reset" value="Cancel" />
     </form>
-    <script language="javascript">
-      function sleep(ms) {
-        return new Promise((resolve) => setTimeout(resolve, ms));
-      }
-      async function sendForm(form) {
-        let FD = new FormData(form);
-        console.log(FD);
-        await reqJSON("POST", "/login", FD);
-        //await sleep(1000);
-        location.href = location.href;
-      }
-      //Make a request using RESTful API to the given path with any method and data.
-      function reqJSON(method, url, data) {
-        return new Promise((resolve, reject) => {
-          let xhr = new XMLHttpRequest();
-          xhr.open(method, url);
-          xhr.responseType = "json";
-          xhr.onload = () => {
-            if (xhr.status >= 200 && xhr.status < 300) {
-              resolve({ status: xhr.status, data: xhr.response });
-            } else {
-              reject({ status: xhr.status, data: xhr.response });
-            }
-          };
-          xhr.onerror = () => {
-            reject({ status: xhr.status, data: xhr.response });
-          };
-          xhr.send(data);
-        });
-      }
-    </script>
   </body>
 </html>

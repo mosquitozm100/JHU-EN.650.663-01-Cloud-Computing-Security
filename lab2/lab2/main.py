@@ -25,6 +25,12 @@ else:
     ROOT = DS.key('Entities', 'dev')
 
 
+def encrypt_pswd(pswdStr, hash):
+    if hash == None:
+        hash = bcrypt.gensalt()
+    return bcrypt.hashpw(pswdStr, hash)
+
+
 def put_event(name, dateStr):
     '''
     Put a new event into google cloud storage datebase.
@@ -53,6 +59,11 @@ def request_parse(req_data):
     elif req_data.method == 'GET':
         data = req_data.args
     return data
+
+
+def createSession(username):
+    session.create(username)
+    return 'yes'
 
 
 @app.route('/')
@@ -122,12 +133,21 @@ def delete(event_id):
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     print(session)
-    if 'username' in session:
-        return app.send_static_file('index.html')
     if request.method == 'GET':
         return app.send_static_file('login.html')
     elif request.method == 'POST':
-        session['username'] = request.form['username']
+        username = request.form['username']
+        password = request.form['password'].encode()
+        print(username)
+        print(password)
+        user_key = DS.key('Users', username)
+        users = DS.query(kind='Users', ancestor=user_key)
+        for user in list(users):
+            if user['username'] == username and user['password'] == encrypt_pswd(password, user['password']):
+                createSession(username)
+                return app.send_static_file('index.html')
+            else:
+                return 'Error!'
         return redirect(url_for('root'))
 
 
