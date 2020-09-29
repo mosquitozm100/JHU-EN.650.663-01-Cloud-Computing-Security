@@ -136,13 +136,15 @@ def login():
     if request.method == 'GET':
         return app.send_static_file('login.html')
     elif request.method == 'POST':
+        print(request)
         username = request.form['username']
         password = request.form['password'].encode()
         print(username)
         print(password)
         user_key = DS.key('Users', username)
-        users = DS.query(kind='Users', ancestor=user_key)
+        users = DS.query(kind='Users', ancestor=user_key).fetch()
         for user in list(users):
+            print(user)
             if user['username'] == username and user['password'] == encrypt_pswd(password, user['password']):
                 createSession(username)
                 return app.send_static_file('index.html')
