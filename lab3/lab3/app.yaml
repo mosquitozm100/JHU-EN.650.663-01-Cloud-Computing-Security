@@ -1,0 +1,10 @@
+runtime: python38
+default_expiration: "1m"
+
+handlers:
+  - url: /static
+    secure: always
+    static_dir: static
+  - url: /.*
+    secure: always
+    script: auto
