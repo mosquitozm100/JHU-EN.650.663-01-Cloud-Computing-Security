@@ -28,6 +28,15 @@ USER_KEY = DS.key('Entities', 'root')
 
 
 def encrypt_pswd(pswdStr, hash=None):
+    """encrypt the password
+
+    Args:
+        pswdStr : password
+        hash : Hash uses to encrypt. Defaults to None.
+
+    Returns:
+        hashed password
+    """
     if hash == None:
         hash = bcrypt.gensalt()
     return bcrypt.hashpw(pswdStr, hash)
@@ -43,14 +52,21 @@ def put_event(name, dateStr):
     Returns:
         null
     '''
-    # print("lalal")
-    # print(USER_KEY)
     entity = datastore.Entity(key=DS.key(EVENT, parent=USER_KEY))
     entity.update({'name': name, 'date': dateStr})
     DS.put(entity)
 
 
 def put_user(username, password):
+    '''
+    Put a new user into google cloud storage datebase.
+    Args:
+        username - the name of new user
+        password - password of this user
+
+    Returns:
+        null
+    '''
     user_key = DS.key('Users', username)
     user = datastore.Entity(key=DS.key(USERS, parent=user_key))
     user.update({'username': username, 'password': password})
@@ -73,6 +89,14 @@ def request_parse(req_data):
 
 
 def create_session(username):
+    """Create session and cookie for user
+
+    Args:
+        username : the name of the user
+
+    Returns:
+        url with cookie
+    """
     session_key = DS.key('Session', username)
     session = datastore.Entity(key=DS.key(SESSION, parent=session_key))
     random_secret_token = b64encode(os.urandom(64)).decode()
@@ -91,7 +115,11 @@ def create_session(username):
 
 
 def migrate_data(username):
-    print(USER_KEY)
+    """migrate no owner data when signing up
+
+    Args:
+        username :user's name when signing in
+    """
     for val in DS.query(kind=EVENT, ancestor=ROOT).fetch():
         deleteKey = DS.key(EVENT, val.id, parent=ROOT)
         DS.delete(deleteKey)
@@ -172,6 +200,12 @@ def delete(event_id):
 
 @ app.route('/login', methods=['GET', 'POST'])
 def login():
+    """
+    log the user in
+
+    Returns:
+        redirect to main page with cookie
+    """
     if request.method == 'GET':
         return app.send_static_file('login.html')
     elif request.method == 'POST':
@@ -190,6 +224,11 @@ def login():
 
 @ app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    """new user signup
+
+    Returns:
+        redirect to main page with cookie
+    """
     if request.method == 'GET':
         return app.send_static_file('signup.html')
     elif request.method == 'POST':
@@ -204,7 +243,11 @@ def signup():
 
 @ app.route('/logout')
 def logout():
-    # remove the username from the session if it is there
+    """logout
+
+    Returns:
+        redirect to main page with no cookie and session
+    """
     username = request.cookies.get('user')
     token = request.cookies.get('token')
     if username == None:
