@@ -20,11 +20,14 @@ if app.debug:
 
 
 DS = datastore.Client()  # The client to connect with Google cloud storage
+secret = DS.get(DS.key('secret', 'oidc'))[
+    'client-secret']  # Get the secret from cloud storage
 EVENT = 'Event'  # Name of the event table, can be anything you like.
 USERS = 'Users'
 SESSION = 'Session'
 ROOT = DS.key('Entities', 'root')  # Name of root key, can be anything.
 USER_KEY = DS.key('Entities', 'root')
+base_url = "jhu-cloud-computing-security.ue.r.appspot.com"
 
 
 def encrypt_pswd(pswdStr, hash=None):
@@ -135,7 +138,7 @@ def root():
     username = request.cookies.get('user')
     token = request.cookies.get('token')
     if token == None:
-        return redirect(url_for('login'))
+        return redirect(url_for('login_google'))
     session_key = DS.key('Session', username)
     sessions = DS.query(kind=SESSION, ancestor=session_key).fetch()
     for session in sessions:
@@ -145,7 +148,7 @@ def root():
             else:
                 return redirect(url_for('logout'))
     else:
-        return redirect(url_for('login'))
+        return redirect(url_for('login_google'))
 
 
 @ app.route('/events', methods=['GET'])
@@ -268,6 +271,28 @@ def logout():
     global USER_KEY
     USER_KEY = DS.key('Entities', 'root')
     return resp
+
+
+@app.route('/login_google')
+def login_google():
+    state = str(uuid.uuid4())
+    nonce = str(uuid.uuid4())
+    redirect_uri = 'https://' + base_url + '/oidcauth'
+    form = {
+        'state': state,
+        'nonce': nonce,
+        'redirect_uri': redirect_uri
+    }
+    expired_time = datetime.datetime.now() - datetime.timedelta(hours=1)
+    resp = make_response(redirect(url_for('login')))
+    resp.set_cookie('oidc_form', json.dumps(form),
+                    max_age=60 * 60, expires=expired_time)
+    return resp
+
+
+@app.route('/oidcauth')
+def oidcauth():
+    return app.send_static_file('hello.html')
 
 
 if __name__ == '__main__':

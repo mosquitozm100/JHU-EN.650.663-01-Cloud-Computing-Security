@@ -1,17 +1,56 @@
 <html>
-  <head>
-    <title>Login page</title>
-  </head>
-  <body>
-    <h1>Please Login</h1>
-    <form name="login_form" action="/login" method="POST">
-      Username<input type="text" name="username" /> Password<input
-        type="password"
-        name="password"
-      />
-      <input type="submit" value="Login" />
-      <input type="reset" value="Reset" />
-      <p>New User? <a href="/signup">Sign up</a></p>
-    </form>
-  </body>
+
+<head>
+  <title>Login page</title>
+</head>
+
+<!-- <body onload="get_redirect_uri()"> -->
+<script>
+  function fill_oidc_form() {
+    var cookies = document.cookie.split(';');
+    //console.log(cookies);
+    var oidc_form = null;
+    for (i in cookies) {
+      //console.log(cookies[i])
+      if (cookies[i].indexOf('oidc_form') >= 0) {
+        oidc_form = cookies[i].split('oidc_form=')[1];
+        break;
+      }
+    }
+    //console.log(oidc_form)
+    oidc_form = oidc_form.replace(/\\054/g, ',');
+    oidc_form = oidc_form.replace(/\\/g, '');
+    oidc_form = oidc_form.substring(1, oidc_form.length - 1)
+    //console.log(oidc_form)
+
+    var obj = JSON.parse(oidc_form);
+
+    document.getElementById('state').value = obj.state;
+    document.getElementById('nonce').value = obj.nonce;
+    document.getElementById('redirect_uri').value = obj.redirect_uri;
+  }
+  console.log(document.cookie)
+</script>
+
+<body onload="fill_oidc_form()">
+  <h1>Please Login</h1>
+  <form name="login_form" action="/login" method="POST">
+    Username<input type="text" name="username" /> Password<input type="password" name="password" />
+    <input type="submit" value="Login" />
+    <input type="reset" value="Reset" />
+  </form>
+  <p>New User? <a href="/signup">Sign up</a></p>
+  <form id="oidc_login_form" action="https://accounts.google.com/o/oauth2/v2/auth" method="GET">
+    <input type="hidden" name="client_id"
+      value="261357329432-tairfh2ilfvmtnsptqibcbiul7q8g48d.apps.googleusercontent.com">
+    <input type="hidden" name="redirect_uri" id="redirect_uri"
+      value='https://jhu-cloud-computing-security.ue.r.appspot.com/oidcauth'>
+    <input type="hidden" name="response_type" value="code">
+    <input type="hidden" name="scope" value="openid email">
+    <input type="hidden" name="state" id="state">
+    <input type="hidden" name="nonce" id="nonce">
+    <input type="submit" value="Login with Google">
+  </form>
+</body>
+
 </html>

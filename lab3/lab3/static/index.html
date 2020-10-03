@@ -216,6 +216,23 @@
         });
     }
 
+    function getCookie(cname) {
+      var name = cname + "=";
+      var decodedCookie = decodeURIComponent(document.cookie);
+      var ca = decodedCookie.split(';');
+      for (var i = 0; i < ca.length; i++) {
+        var c = ca[i];
+        while (c.charAt(0) == ' ') {
+          c = c.substring(1);
+        }
+        if (c.indexOf(name) == 0) {
+          return c.substring(name.length, c.length);
+        }
+      }
+      return "";
+    }
+
+
     //Change countdown for every event every 1 second, autodelete expired event every 5 seconds.
     document.addEventListener("DOMContentLoaded", () => {
       setInterval(function () {
@@ -225,6 +242,8 @@
         autoDelete();
       }, 5000);
     });
+    //user = getCookie('user');
+    //document.getElementById('user').innerHTML = user;
   </script>
 </head>
 
@@ -234,6 +253,7 @@
     <input type="text" id="dateInput" />
     <button onclick="addNewEvent()">create</button>
   </form>
+  <p id='user'></p>
   <form name="logout" action="/logout" method="GET">
     <input type="submit" value="Logout" />
   </form>
