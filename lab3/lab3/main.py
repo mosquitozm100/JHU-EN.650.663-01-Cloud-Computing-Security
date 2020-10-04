@@ -1,9 +1,11 @@
 from flask import Flask, json, jsonify, render_template, request, url_for, redirect, session, escape, make_response, flash
+import requests
 from google.cloud import datastore
 import os
 import bcrypt
 import datetime
 from datetime import timedelta, timezone
+import base64
 from base64 import b64encode
 import uuid
 from werkzeug.debug import DebuggedApplication
@@ -20,14 +22,13 @@ if app.debug:
 
 
 DS = datastore.Client()  # The client to connect with Google cloud storage
-secret = DS.get(DS.key('secret', 'oidc'))[
-    'client-secret']  # Get the secret from cloud storage
 EVENT = 'Event'  # Name of the event table, can be anything you like.
 USERS = 'Users'
 SESSION = 'Session'
 ROOT = DS.key('Entities', 'root')  # Name of root key, can be anything.
 USER_KEY = DS.key('Entities', 'root')
 base_url = "jhu-cloud-computing-security.ue.r.appspot.com"
+client_id = "261357329432-tairfh2ilfvmtnsptqibcbiul7q8g48d.apps.googleusercontent.com"
 
 
 def encrypt_pswd(pswdStr, hash=None):
@@ -292,7 +293,47 @@ def login_google():
 
 @app.route('/oidcauth')
 def oidcauth():
-    return app.send_static_file('hello.html')
+    code = request.args['code']
+    state = request.args['state']
+    oidc_form = json.loads(request.cookies.get('oidc_form'))
+    nonce = oidc_form['nonce']
+    oidc_state = oidc_form['state']
+    redirect_uri = oidc_form['redirect_uri']
+    if oidc_state != state:
+        flash("Wrong state")
+        return app.send_static_file('hello.html')
+    # Get the secret from cloud storage
+    client_secret = DS.get(DS.key('secret', 'oidc'))['client-secret']
+    response = requests.post("https://oauth2.googleapis.com/token",
+                             {
+                                 "code": code,
+                                 "client_id": client_id,
+                                 "client_secret": client_secret,
+                                 "redirect_uri": redirect_uri,
+                                 "grant_type": "authorization_code"
+                             }
+                             )
+    print("response:")
+    print(response)
+    id_token = response.json()['id_token']
+    _, body, _ = id_token.split('.')
+    body += '=' * (-len(body) % 4)
+    claims = json.loads(base64.urlsafe_b64decode(body.encode('utf-8')))
+    jwt_nonce = claims['nonce']
+    if nonce != jwt_nonce:
+        flash("Wrong nonce")
+        return app.send_static_file('hello.html')
+
+    username = claims['sub']
+    global USER_KEY
+    USER_KEY = DS.key('Entities', username)
+    user_key = DS.key('Users', username)
+    users = DS.query(kind='Users', ancestor=user_key).fetch()
+    for user in list(users):
+        if user['username'] == username:
+            return create_session(username)
+    put_user(username, None)
+    return create_session(username)
 
 
 if __name__ == '__main__':
