@@ -112,9 +112,9 @@ def create_session(username):
 
     resp = make_response(app.send_static_file('index.html'))
     resp.set_cookie('user', username,
-                    max_age=60*60, expires=expire_time)
+                    max_age=60*60, expires=expire_time, secure=True)
     resp.set_cookie('token', random_secret_token,
-                    max_age=60*60, expires=expire_time)
+                    max_age=60*60, expires=expire_time, secure=True)
     return resp
 
 
@@ -265,9 +265,9 @@ def logout():
     expired_time = datetime.datetime.now() - datetime.timedelta(hours=1)
     resp = make_response(redirect(url_for('root')))
     resp.set_cookie('user', '',
-                    max_age=0, expires=expired_time)
+                    max_age=0, expires=expired_time, secure=True)
     resp.set_cookie('token', '',
-                    max_age=0, expires=expired_time)
+                    max_age=0, expires=expired_time, secure=True)
     flash('You have signed out!')
     global USER_KEY
     USER_KEY = DS.key('Entities', 'root')
@@ -287,7 +287,7 @@ def login_google():
     expired_time = datetime.datetime.now() - datetime.timedelta(hours=1)
     resp = make_response(redirect(url_for('login')))
     resp.set_cookie('oidc_form', json.dumps(form),
-                    max_age=60 * 60, expires=expired_time)
+                    max_age=60 * 60, expires=expired_time, secure=True)
     return resp
 
 
@@ -313,8 +313,6 @@ def oidcauth():
                                  "grant_type": "authorization_code"
                              }
                              )
-    print("response:")
-    print(response)
     id_token = response.json()['id_token']
     _, body, _ = id_token.split('.')
     body += '=' * (-len(body) % 4)

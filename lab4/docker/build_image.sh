@@ -1,0 +1,1 @@
+docker build -t lab4-img:v4 .
