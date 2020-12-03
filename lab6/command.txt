@@ -1,3 +1,10 @@
+docker network create pgnet
+
+docker pull postgres
+
+docker container inspect mypg \
+  -f '{{.NetworkSettings.Networks.pgnet.IPAddress}}'
+
 docker run \
   --network pgnet \
   --name mypg \
@@ -22,7 +29,3 @@ docker run \
   --network pgnet\
   -p 8080:8080 \
   lab6-img
-
-
-          conn = psycopg2.connect("dbname=" + dbname + " user=" +
-                                dbuser + " host=" + dbhost + " password=" + dbpasswd)

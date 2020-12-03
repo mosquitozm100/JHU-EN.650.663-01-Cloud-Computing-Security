@@ -7,7 +7,7 @@ RUN pip install flask \
 EXPOSE 8080
 ENV DB_NAME="postgres"
 ENV DB_USER="postgres"
-ENV DB_HOST="pgnet"
+ENV DB_HOST="172.18.0.2"
 ENV DB_PASSWORD="mysecret"
 ENV FLASK_APP=main.py
 CMD flask run --host=0.0.0.0 --port=8080

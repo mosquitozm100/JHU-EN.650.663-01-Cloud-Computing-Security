@@ -42,8 +42,8 @@ def count_paths(u_path):
 
     print(u_path)
     try:
-        conn = psycopg2.connect("dbname=" + dbname + " user=" +
-                                dbuser + " host=" + dbhost + " password=" + dbpasswd)
+        conn = psycopg2.connect(
+            database=dbname, user=dbuser, host=dbhost, password=dbpasswd)
         cur = conn.cursor()
         cur.execute(sql, (u_path, ))
         conn.commit()
@@ -59,8 +59,8 @@ def show_path():
     data_return = None
 
     try:
-        conn = psycopg2.connect("dbname=" + dbname + " user=" +
-                                dbuser + " host=" + dbhost + " password=" + dbpasswd)
+        conn = psycopg2.connect(
+            database=dbname, user=dbuser, host=dbhost, password=dbpasswd)
         cur = conn.cursor()
         cur.execute(sql)
         data_return = cur.fetchall()
