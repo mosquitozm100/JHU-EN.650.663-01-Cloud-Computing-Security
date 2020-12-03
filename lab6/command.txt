@@ -1,0 +1,28 @@
+docker run \
+  --network pgnet \
+  --name mypg \
+  -e POSTGRES_PASSWORD=mysecret \
+  -p 5432:5432 \
+  -d \
+  postgres
+
+docker run \
+  -i \
+  --rm \
+  --network pgnet \
+  -e PGPASSWORD=mysecret \
+  postgres \
+  psql -h 172.18.0.2 -U postgres < init.sql
+
+docker build -t lab6-img .
+
+docker run \
+  -it \
+  --name=path_count \
+  --network pgnet\
+  -p 8080:8080 \
+  lab6-img
+
+
+          conn = psycopg2.connect("dbname=" + dbname + " user=" +
+                                dbuser + " host=" + dbhost + " password=" + dbpasswd)
